@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Outlet, useOutletContext } from "react-router-dom";
 
 const DATA_URL = "https://raw.githubusercontent.com/onurbayl/data/refs/heads/main/data.json";
 
@@ -10,8 +10,28 @@ const speak = (text) => {
   speechSynthesis.speak(utterance);
 };
 
+// Layout komponent: flashcards verisini yükler ve alt route'lara sağlar
+function FlashcardLayout() {
+  const [flashcards, setFlashcards] = useState([]);
+
+  useEffect(() => {
+    fetch(DATA_URL)
+      .then(res => res.json())
+      .then(data => setFlashcards(data))
+      .catch(console.error);
+  }, []);
+
+  return (
+    <div>
+      {/* Ortak navbar ya da header buraya konabilir */}
+      <Outlet context={{ flashcards }} />
+    </div>
+  );
+}
+
 // Ana flashcard ekranı
-function Flashcards({ flashcards }) {
+function Flashcards() {
+  const { flashcards } = useOutletContext();
   const [index, setIndex] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -119,7 +139,8 @@ function Flashcards({ flashcards }) {
 }
 
 // Arama sayfası
-function SearchPage({ flashcards }) {
+function SearchPage() {
+  const { flashcards } = useOutletContext();
   const [search, setSearch] = useState("");
 
   const filtered = flashcards.filter(card => {
@@ -178,20 +199,13 @@ function SearchPage({ flashcards }) {
 
 // Ana uygulama
 export default function App() {
-  const [flashcards, setFlashcards] = useState([]);
-
-  useEffect(() => {
-    fetch(DATA_URL)
-      .then(res => res.json())
-      .then(data => setFlashcards(data))
-      .catch(console.error);
-  }, []);
-
   return (
-    <Router>
+    <Router basename="/flashcard-app">
       <Routes>
-        <Route path="/" element={<Flashcards flashcards={flashcards} />} />
-        <Route path="/search" element={<SearchPage flashcards={flashcards} />} />
+        <Route path="/" element={<FlashcardLayout />}>
+          <Route index element={<Flashcards />} />
+          <Route path="search" element={<SearchPage />} />
+        </Route>
       </Routes>
     </Router>
   );
