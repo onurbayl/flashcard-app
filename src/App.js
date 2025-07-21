@@ -1,37 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, Outlet, useOutletContext } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 
 const DATA_URL = "https://raw.githubusercontent.com/onurbayl/data/refs/heads/main/data.json";
 
-// 🔊 Telaffuz fonksiyonu
+
+let englishVoice = null;
+
+const loadVoices = () => {
+  const voices = speechSynthesis.getVoices();
+  englishVoice = voices.find(
+    (v) => v.lang.startsWith("en") && v.name.toLowerCase().includes("english")
+  );
+};
+
+speechSynthesis.onvoiceschanged = loadVoices;
+
+// Speaking function
 const speak = (text) => {
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US"; // İngilizce telaffuz
+  utterance.lang = "en-US";
+  if (englishVoice) {
+    utterance.voice = englishVoice;
+  }
   speechSynthesis.speak(utterance);
 };
 
-// Layout komponent: flashcards verisini yükler ve alt route'lara sağlar
-function FlashcardLayout() {
-  const [flashcards, setFlashcards] = useState([]);
-
-  useEffect(() => {
-    fetch(DATA_URL)
-      .then(res => res.json())
-      .then(data => setFlashcards(data))
-      .catch(console.error);
-  }, []);
-
-  return (
-    <div>
-      {/* Ortak navbar ya da header buraya konabilir */}
-      <Outlet context={{ flashcards }} />
-    </div>
-  );
-}
-
-// Ana flashcard ekranı
-function Flashcards() {
-  const { flashcards } = useOutletContext();
+// Main Flashcards page
+function Flashcards({ flashcards }) {
   const [index, setIndex] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -138,9 +133,8 @@ function Flashcards() {
   );
 }
 
-// Arama sayfası
-function SearchPage() {
-  const { flashcards } = useOutletContext();
+// Searching Page
+function SearchPage({ flashcards }) {
   const [search, setSearch] = useState("");
 
   const filtered = flashcards.filter(card => {
@@ -197,15 +191,22 @@ function SearchPage() {
   );
 }
 
-// Ana uygulama
+// Main app
 export default function App() {
+  const [flashcards, setFlashcards] = useState([]);
+
+  useEffect(() => {
+    fetch(DATA_URL)
+      .then(res => res.json())
+      .then(data => setFlashcards(data))
+      .catch(console.error);
+  }, []);
+
   return (
-    <Router basename="/flashcard-app">
+    <Router basename="/flashcard-app"> {/* GitHub Pages için basename */}
       <Routes>
-        <Route path="/" element={<FlashcardLayout />}>
-          <Route index element={<Flashcards />} />
-          <Route path="search" element={<SearchPage />} />
-        </Route>
+        <Route path="/" element={<Flashcards flashcards={flashcards} />} />
+        <Route path="/search" element={<SearchPage flashcards={flashcards} />} />
       </Routes>
     </Router>
   );
