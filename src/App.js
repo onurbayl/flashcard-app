@@ -163,6 +163,12 @@ function SearchPage({ flashcards }) {
         </p>
       )}
 
+      {search.trim() === "" && (
+        <p style={{ marginBottom: "1rem", color: "#555" }}>
+          {filtered.length} sonuç bulundu.
+        </p>
+      )}
+
       {filtered.length === 0 ? (
         <p>Sonuç bulunamadı.</p>
       ) : (
